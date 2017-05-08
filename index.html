@@ -1,7 +1,7 @@
 <!DOCTYPE html>
 <html>
   <head>
-    <title>Red Hat Remark Template 16x9</title>
+    <title>Ansible + OpenStack + Heat</title>
     <meta http-equiv="Content-Type" content="text/html; charset=UTF-8"/>
     <link rel="stylesheet" href="slides.css"></link>
   </head>
@@ -40,368 +40,249 @@ class: content_slide
 
 template: title_layout
 
-# PRESENTATION TITLE SHOULD NOT EXCEED TWO LINES
+# OpenStack, Ansible, and Heat (oh my!)
 
-## Subheading goes here
-
-Presenter<br>
-Presenter's title<br>
-Date<br>
+Lars Kellogg-Stedman <lars@redhat.com>  
+Principal Software Engineer  
+May 8, 2017
 
 ---
 
-template: title_layout
-class: bg_building_red
+# The goal: test cloud-init packaging
 
-# PRESENTATION TITLE SHOULD NOT EXCEED TWO LINES
-
-## Subheading goes here
-
-Presenter<br>
-Presenter's title<br>
-Date<br>
+cloud-init performs initial configuration of servers when they first
+boot, using metadata provided by cloud environment.
 
 ---
 
-template: title_layout
-class: bg_clouds_red
+# Setting the stage
 
-# PRESENTATION TITLE SHOULD NOT EXCEED TWO LINES
+Jenkins job kicks off and clones three repositories:
 
-## Subheading goes here
-
-Presenter<br>
-Presenter's title<br>
-Date<br>
+1. Package sources
+2. Ansible playbooks for setting up test environment
+3. Ansible playbooks for running tests
 
 ---
 
-template: section_layout
-class: bg_green
+class: center, middle
 
-INSERT DIVIDER COPY
+# Build package and image
 
----
+![sausage grinder](assets/grinder-small.png)
 
-template: section_layout
-class: bg_building_2_green
-
-INSERT DIVIDER COPY
+This is not exciting.  `virt-customize` is involved.
 
 ---
 
-template: section_layout
-class: bg_rice_green
+# Who was that masked man, anyway?
 
-INSERT DIVIDER COPY
+- Environment variables (`OS_AUTH_URL`, `OS_USERNAME`, `OS_PASSWORD`,
+  ...)
+- Literal values
 
----
-
-template: section_layout
-
-INSERT DIVIDER COPY
-
----
-
-template: section_layout
-class: bg_building_2_red
-
-INSERT DIVIDER COPY
+        - os_image:
+            auth:
+              auth_url: ...
+              username: ...
+              password: ...
+              [...]
+- `os_client_config` ![this is the best](assets/like.png)
 
 ---
 
-template: section_layout
-class: bg_rice_red
+# os_client_config
 
-INSERT DIVIDER COPY
+    clouds:
+      cloud1:
+        identity_api_version: 3
+        auth:
+          auth_url: "http://horizon.mycompany.com/"
+          password: setec.astronomy
+          project_name: sneakers
+          username: lars
 
----
-
-template: section_layout
-class: bg_bridge_green
-
-INSERT DIVIDER COPY
-
----
-
-template: section_layout
-class: bg_bridge_2_green
-
-INSERT DIVIDER COPY
-
----
-
-template: section_layout
-class: bg_waterfall_green
-
-INSERT DIVIDER COPY
+      cloud2:
+        auth:
+          auth_url: "http://horizon.yourcompany.com/"
+          password: secret
+          project_name: gotg
+          username: rocket
 
 ---
 
-template: section_layout
-class: bg_bridge_red
+# os_client_config
 
-INSERT DIVIDER COPY
+Looks for `clouds.yaml` in...
 
----
+- Your current directory
+- `$HOME/.config/openstack`*
+- `/etc/openstack`*
+- `/etc/ansible` (but *only* for Ansible modules)
 
-template: section_layout
-class: bg_bridge_2_red
+Select cloud using the `$OS_CLOUD` environment variable (or `cloud`
+parameter in your tasks).
 
-INSERT DIVIDER COPY
+\* These are for Linux; OS X/Windows have [different paths][].
 
----
-
-template: section_layout
-class: bg_waterfall_red
-
-INSERT DIVIDER COPY
+[different paths]: https://github.com/openstack/os-client-config#site-specific-file-locations
 
 ---
 
-template: agenda_layout
+# Upload image TO THE CLOUD!
 
-# AGENDA
-
-## Date and/or title of event
-
-.left-column[
-8:00AM—9:00AM
-
-NAME OF TOPIC
-
-8:00AM—9:00AM
-
-NAME OF TOPIC
-
-8:00AM—9:00AM
-
-NAME OF TOPIC
-
-8:00AM—9:00AM
-
-NAME OF TOPIC
-]
-
-.right-column[
-8:00AM—9:00AM
-
-NAME OF TOPIC
-
-8:00AM—9:00AM
-
-NAME OF TOPIC
-
-8:00AM—9:00AM
-
-NAME OF TOPIC
-
-8:00AM—9:00AM
-
-NAME OF TOPIC
-]
+![upload image](assets/upload.png)
 
 ---
 
-# CLICK TO ADD TITLE
+# os_image module: simple
 
-## Click to add subtitle
-
-Insert paragraph of copy here. Do not exceed 40 words.
-
-- Bullet
-- Bullet
-- Bullet
-
----
-
-# TABLES
-
-Using the table tool in Google Slides, you can create basic tables for your presentation. Make sure to use only corporate and secondary colors.
-
-.center.small-text[
-Sample chart template]
-
-| VALUE | VALUE | VALUE | VALUE |
-|:-----:|:-----:|:-----:|:-----:|
-| value | value | value | value |
-| value | value | value | value |
-| value | value | value | value |
-
-.center.small-text[
-Sample chart template]
-
-.blue-table[
-| VALUE | VALUE | VALUE | VALUE |
-|:-----:|:-----:|:-----:|:-----:|
-| value | value | value | value |
-| value | value | value | value |
-| value | value | value | value |
-]
+    - name: upload image to glance
+      os_image:
+        name: "{{ image_name }}"
+        filename: "{{ image_info.image }}"
+        state: present
+        container_format: "{{ image_container_format|default('bare') }}"
+        disk_format: "{{ image_disk_format|default('qcow2') }}"
+      when: image_info.kernel is not defined
 
 ---
 
-# CODE SNIPPET
+# os_image module: with extra sauce
 
-When referencing code snippets, use the template below.<br/>
-Resize the snippet box to the appropriate size for your text.
-
-```python
-# This program prints Hello, world!
-
-print('Hello, world!')
-```
-
----
-
-# CLICK TO ADD TITLE
-
-## Click to add subtitle
-
-.left-column[
-Insert paragraph of copy here. Do not exceed 40 words.
-
-- Bullet
-- Bullet
-- Bullet
-]
-
-.right-column[
-![Insert graphic here](assets/insert_graphic_here.png)
-]
+    - name: upload image to glance
+      os_image:
+        name: "{{ image_name }}"
+        filename: "{{ image_info.image }}"
+        state: present
+        container_format: "{{ image_container_format|default('bare') }}"
+        disk_format: "{{ image_disk_format|default('qcow2') }}"
+        properties:
+          kernel_id: "{{ image_kernel.id }}"
+          ramdisk_id: "{{ image_initrd.id }}"
+      when: image_info.kernel is defined
 
 ---
 
-# CLICK TO ADD TITLE
+# creating a test environment
 
-## Click to add subtitle
+1. create a network
+1. create a subnet
+1. create a router
+1. create a security group
+1. create floating ip address
+1. boot server
+1. associate floating ip address
+1. wait for server to finish booting
+1. etc etc etc
 
-.left-column[
-![Insert graphic here](assets/insert_graphic_here.png)
-]
-
-.right-column[
-Insert paragraph of copy here. Do not exceed 40 words.
-
-- Bullet
-- Bullet
-- Bullet
-]
+(and make sure you tear it all down again)
 
 ---
 
-# CLICK TO ADD TITLE
+class: center, middle
 
-## Click to add subtitle
-
-.left-column[
-![Insert graphic here](assets/insert_graphic_here_small.png)
-.center[
-###COLUMN HEADING<br>ALL CAPS, TWO LINES AT MOST
-
-Click to insert text
-]
-]
-
-.right-column[
-![Insert graphic here](assets/insert_graphic_here_small.png)
-
-.center[
-###COLUMN HEADING<br>ALL CAPS, TWO LINES AT MOST
-
-Click to insert text
-]
-]
+Ain't Nobody Got Time For That.
 
 ---
 
-# CLICK TO ADD TITLE
+# OpenStack Heat
 
-## Click to add subtitle
-
-.left-column.center[
-###COLUMN HEADING<br>ALL CAPS, TWO LINES AT MOST
-
-Click to insert text
-]
-
-.right-column.center[
-###COLUMN HEADING<br>ALL CAPS, TWO LINES AT MOST
-
-Click to insert text
-]
+- orchestration tool
+- uses declarative YAML syntax
+- manages "stacks" of resources in OpenStack
+- Parallelized, dependency ordered
 
 ---
 
-# CLICK TO ADD TITLE
+# os_stack module
 
-## Click to add subtitle
-
-.left-column-3.center[
-![Insert graphic here](assets/insert_graphic_here_small.png)
-###COLUMN HEADING<br>ALL CAPS
-
-Click to insert text
-]
-
-.middle-column-3.center[
-![Insert graphic here](assets/insert_graphic_here_small.png)
-###COLUMN HEADING<br>ALL CAPS
-
-Click to insert text
-]
-
-.right-column-3.center[
-![Insert graphic here](assets/insert_graphic_here_small.png)
-###COLUMN HEADING<br>ALL CAPS
-
-Click to insert text
-]
+    - name: deploy stack
+      os_stack:
+        name: "{{ stack_name }}"
+        state: present
+        template: "{{ role_path }}/files/cici.yml"
+        parameters:
+          image_name: "{{ image_name }}"
+          external_network_id: "{{ external_network_id }}"
+          keypair_name: "{{ keypair_name }}"
+          server_name: "{{ server_name }}"
+      register: stack
 
 ---
 
-# CLICK TO ADD TITLE
+# Heat templates
 
-## Click to add subtitle
+Some highilghts from the [heat template](assets/cloud-init-stack.txt):
 
-.left-column-3.center[
-###COLUMN HEADING<br>ALL CAPS
+- `os_stack` (by default) waits for stack to complete successfully
+- `WaitCondition` resources are not "complete" until they receive a REST
+  API notification
+- We pass a `user-data` script to `cloud-init` that sends that
+  notification
 
-Click to insert text
-]
-
-.middle-column-3.center[
-###COLUMN HEADING<br>ALL CAPS
-
-Click to insert text
-]
-
-.right-column-3.center[
-###COLUMN HEADING<br>ALL CAPS
-
-Click to insert text
-]
+So: We know if `cloud-init` completes successfully.
 
 ---
 
-# CLICK TO ADD TITLE
+# Remembering our stack
 
-## Click to add subtitle
-
-.center[Click to add text]
-
-
-.fill-width[![Insert graphic here](assets/insert_graphic_here_small.png)]
+We can save information about the stack to a JSON file...
+    - name: record stack data
+      copy:
+        content: "{{ stack|to_nice_json }}"
+        dest: "{{ workspace }}/stack.json"
+...and load it back in later:
+    - name: load stack data
+      include_vars:
+        file: "{{ workspace }}/stack.json"
+        name: stack
 
 ---
 
-# CLICK TO ADD TITLE
+# add_host module
 
-## Click to add subtitle
+    - name: register cloud-init host with ansible
+      add_host:
+        name: >-
+          {{ (stack.stack.outputs|
+          selectattr("output_key", "equalto", "server_name")|
+          first).output_value }}
+        groups: cloudinit
+        ansible_host: >-
+          {{ (stack.stack.outputs|
+          selectattr("output_key", "equalto", "server_ip")|
+          first).output_value }}
 
-.fill-width[![Insert graphic here](assets/insert_graphic_here_small.png)]
+---
 
-.center[Click to add text]
+# Now we can run tests
+
+    - name: run tests
+      tags:
+        - tests
+      hosts: cloudinit
+      roles:
+        - test
+
+---
+
+# Cleanup
+
+    - name: list heat stacks
+      command:
+        openstack stack list -f json
+      register: stacks
+      changed_when: false
+
+    - name: delete old stacks
+      os_stack:
+        name: "{{ item['Stack Name'] }}"
+        state: absent
+      when: >
+        item['Stack Name'].startswith(name_prefix)
+      with_items: "{{ stacks.stdout|from_json }}"
+
 
 ---
 
@@ -409,64 +290,9 @@ template: thank_you
 
 # THANK YOU
 
-.google_plus[
-[plus.google.com/+RedHat](https://plus.google.com/+RedHat)]
-
-.linkedin[
-[linkedin.com/company/red-hat](https://linkedin.com/company/red-hat)]
-
-.youtube[
-[youtube.com/user/RedHatVideos](https://youtube.com/user/RedHatVideos)]
-
-.facebook[
-[facebook.com/redhatinc](https://facebook.com/redhatinc)]
-
-.twitter[
-[twitter.com/RedHatNews](https://twitter.com/RedHatNews)]
-
----
-
-template: thank_you
-class: bg_thank_you_building
-
-# THANK YOU
-
-.google_plus[
-[plus.google.com/+RedHat](https://plus.google.com/+RedHat)]
-
-.linkedin[
-[linkedin.com/company/red-hat](https://linkedin.com/company/red-hat)]
-
-.youtube[
-[youtube.com/user/RedHatVideos](https://youtube.com/user/RedHatVideos)]
-
-.facebook[
-[facebook.com/redhatinc](https://facebook.com/redhatinc)]
-
-.twitter[
-[twitter.com/RedHatNews](https://twitter.com/RedHatNews)]
-
----
-
-template: thank_you
-class: bg_thank_you_mountains
-
-# THANK YOU
-
-.google_plus[
-[plus.google.com/+RedHat](https://plus.google.com/+RedHat)]
-
-.linkedin[
-[linkedin.com/company/red-hat](https://linkedin.com/company/red-hat)]
-
-.youtube[
-[youtube.com/user/RedHatVideos](https://youtube.com/user/RedHatVideos)]
-
-.facebook[
-[facebook.com/redhatinc](https://facebook.com/redhatinc)]
-
-.twitter[
-[twitter.com/RedHatNews](https://twitter.com/RedHatNews)]
+- larsks @ irc
+- [larsks @ twitter](https://twitter.com/larsks)
+- <https://github.com/larsks/ansible-day-talk-05-2017/>
 
 ---
 
@@ -485,7 +311,7 @@ http://creativecommons.org/licenses/by/4.0/
     <script type="text/javascript">
       var slideshow = remark.create({
         ratio: '16:9',
-		slideNumberFormat: '%current%   <span class="designator"> INSERT DESIGNATOR, IF NEEDED</span>',
+		slideNumberFormat: '%current%   <span class="designator"> Ansible + OpenStack + Heat</span>',
         countIncrementalSlides: false
       });
     </script>
